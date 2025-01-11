@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "903083396983",
+    "project_id": "gamifygains",
+    "storage_bucket": "gamifygains.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:903083396983:android:40c79c0c7605b7f20c9b72",
+        "android_client_info": {
+          "package_name": "com.example.gamify_gains"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "903083396983-cbnibmapb4ncv8k7jd1fp85r7u97b8th.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3hHozitLIHawqA_4LhXFqMd45bGXhuzQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "903083396983-cbnibmapb4ncv8k7jd1fp85r7u97b8th.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
