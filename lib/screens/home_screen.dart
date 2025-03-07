@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
+import 'package:gamify_gains/models/gym_session.dart';
+import 'package:gamify_gains/screens/gym_session_screen.dart';
 import 'package:intl/intl.dart';
 import '../services/database_helper.dart';
 import '../models/workout.dart';
 import 'workout_list_screen.dart';
-import 'gym_session_screen.dart';
 import 'diet_screen.dart';
 import '../widgets/llm_integration_main.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../services/workout_service.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -22,8 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final dbHelper = DatabaseHelper();
+  final workoutService = WorkoutService(); // Add this line
   List<Workout> workouts = [];
-  late AnimationController _animationController;
   ValueNotifier<String> elapsedTime = ValueNotifier<String>("00:00:00");
   ValueNotifier<int> weeklyGymTime = ValueNotifier<int>(0);
   bool isWorkoutRunning = false;
@@ -38,50 +38,32 @@ class _HomeScreenState extends State<HomeScreen>
     });
     _loadWorkouts(DateFormat('EEEE').format(DateTime.now()));
     _loadWeeklyGymTime();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat();
     _listenToStream();
   }
 
   void _listenToStream() {
-      _streamSubscription = service.on('update').listen((event) {
-        if (mounted) {
-          setState(() {
-            if (event != null &&
-                event is Map<String, dynamic> &&
-                event.containsKey("current_time")) {
-              elapsedTime.value = event["current_time"] as String;
-            }
-          });
+  _streamSubscription = workoutService.service.on('update').listen((event) {
+    if (mounted) {
+      setState(() {
+        if (event != null &&
+            event is Map<String, dynamic> &&
+            event.containsKey("current_time")) {
+          elapsedTime.value = event["current_time"] as String;
         }
       });
     }
+  });
+}
   @override
   void dispose() {
-    _animationController.dispose();
     elapsedTime.dispose();
     _streamSubscription?.cancel();
     super.dispose();
   }
 
-  Future<void> initializeService() async {
-    final service = FlutterBackgroundService();
-    await service.configure(
-      androidConfiguration: AndroidConfiguration(
-        onStart: onStart,
-        autoStart: false,
-        isForegroundMode: true,
-        // Add a notification for foreground service to enhance user experience
-      ),
-      iosConfiguration: IosConfiguration(
-        autoStart: false,
-        onForeground: onStart,
-        onBackground: null,
-      ),
-    );
-  }
+Future<void> initializeService() async {
+  await workoutService.initializeService(); // Use WorkoutService
+}
 
   Future<void> _loadWorkouts(String day) async {
     workouts = await dbHelper.getWorkouts(day);
@@ -103,25 +85,25 @@ Future<void> _loadWeeklyGymTime() async {
   }
 
   void _startWorkout() async {
-    final service = FlutterBackgroundService();
-    var isRunning = await service.isRunning();
-    if (!isRunning) {
-      await service.startService();
-    }
-    service.invoke("startTimer");
-    setState(() {
-      isWorkoutRunning = true;
-    });
+  final service = FlutterBackgroundService();
+  var isRunning = await service.isRunning();
+  if (!isRunning) {
+    await service.startService();
   }
+  workoutService.startTimer(); // Use WorkoutService
+  setState(() {
+    isWorkoutRunning = true;
+  });
+}
 
-  void _stopWorkout() {
-    service.invoke("stopService");
-    setState(() {
-      isWorkoutRunning = false;
-      elapsedTime.value = "00:00:00";
-    });
-    _loadWeeklyGymTime();
-  }
+void _stopWorkout() {
+  workoutService.stopTimer(); // Use WorkoutService
+  setState(() {
+    isWorkoutRunning = false;
+    elapsedTime.value = "00:00:00";
+  });
+  _loadWeeklyGymTime();
+}
 
   @override
 Widget build(BuildContext context) {
@@ -147,12 +129,7 @@ Widget build(BuildContext context) {
       body: Stack(
         children: [
           // Background and main content (unchanged)
-          AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _animationController.value * 0),
-                child: Container(
+                Container(
                   decoration: const BoxDecoration(
                     image: DecorationImage(
                       image: AssetImage('assets/barbell_background.png'),
@@ -190,9 +167,6 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 ),
-              );
-            },
-          ),
         ],
       ),
     ),
@@ -209,9 +183,9 @@ Widget _buildTimerBottomSheet() {
     ),
     padding: const EdgeInsets.all(16.0),
     child: Center(
-      child: ValueListenableBuilder<String>( // Use ValueListenableBuilder
+      child: ValueListenableBuilder<String>(
         valueListenable: elapsedTime,
-        builder: (context, time, _) { // Rebuilds when elapsedTime changes
+        builder: (context, time, _) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -220,10 +194,10 @@ Widget _buildTimerBottomSheet() {
                 style: const TextStyle(fontSize: 18),
               ),
               ElevatedButton(
-                onPressed: (){
-                  service.invoke("stopService"); // Make sure this is being called
+                onPressed: () {
+                  service.invoke("stopService");
                   _stopWorkout();
-                } ,
+                },
                 child: const Text("Stop"),
               ),
             ],
@@ -347,7 +321,14 @@ Widget _buildWorkoutSummary(String currentDay) {
           ),
           const SizedBox(height: 10),
           ElevatedButton(
-            onPressed: _startWorkout,
+            onPressed: (){
+              Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => GymSessionScreen(), // Navigate to your timer screen
+                    ),
+                  );
+            },
             child: const Text('Start Workout'),
           ),
         ],

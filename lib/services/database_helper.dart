@@ -64,6 +64,13 @@ class DatabaseHelper {
         height REAL
       )
     ''');
+      await db.execute('''
+        CREATE TABLE tableDiets(
+          id TEXT PRIMARY KEY,
+          plan TEXT,
+          day TEXT
+        )
+      ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -71,15 +78,7 @@ class DatabaseHelper {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE workouts ADD COLUMN day TEXT');
     }
-    if (oldVersion < 3) {
-      await db.execute('''
-        CREATE TABLE diet_plans(
-          id TEXT PRIMARY KEY,
-          day TEXT,
-          plan TEXT
-        )
-      ''');
-    }
+
       if (oldVersion < 4) { // Assuming this is version 4
     try {
       await db.execute('ALTER TABLE users ADD COLUMN weeklyGymTime INTEGER DEFAULT 0');
@@ -102,32 +101,25 @@ class DatabaseHelper {
     }
   }
 
-  // CRUD operations
-  Future<int> insertDietPlan(DietPlan dietPlan) async {
+Future<int> insertDiet(DietPlan diet) async {
     final db = await database;
-    return await db.insert('diet_plans', dietPlan.toMap());
+    return await db.insert('tableDiets', diet.toMap());
   }
-
-  Future<List<DietPlan>> getDietPlans(String day) async {
+  Future<List<DietPlan>> getDiets(String day) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'diet_plans',
-      where: 'day = ?',
-      whereArgs: [day],
-    );
-    return List.generate(maps.length, (i) => DietPlan.fromMap(maps[i]));
+    final List<Map<String, dynamic>> maps = await db.query('tableDiets', where: 'day = ?', whereArgs: [day]);
+    return List.generate(maps.length, (i) {
+      return DietPlan.fromMap(maps[i]);
+    });
   }
-
-  Future<int> updateDietPlan(DietPlan dietPlan) async {
+    Future<int> updateDiet(DietPlan diet) async {
     final db = await database;
-    return await db.update('diet_plans', dietPlan.toMap(), where: 'id = ?', whereArgs: [dietPlan.id]);
+    return await db.update('tableDiets', diet.toMap(), where: 'id = ?', whereArgs: [diet.id]);
   }
-
-  Future<int> deleteDietPlan(String id) async {
+    Future<int> deleteDiet(String id) async {
     final db = await database;
-    return await db.delete('diet_plans', where: 'id = ?', whereArgs: [id]);
+    return await db.delete('tableDiets', where: 'id = ?', whereArgs: [id]);
   }
-
 
 
   Future<int> insertWorkout(Workout workout) async {
@@ -197,12 +189,12 @@ Future<int> deleteGymSession(String id) async {
   }
 
   Future<void> updateUser(User user) async {
-    try {
-      await _firestore.collection('users').doc(user.uid).set(user.toFirestore(), SetOptions(merge: true));
-    } catch (e) {
-      print("Error updating user: $e");
-    }
+  try {
+    await _firestore.collection('users').doc(user.uid).set(user.toFirestore(), SetOptions(merge: true));
+  } catch (e) {
+    print("Error updating user: $e");
   }
+}
 
     Stream<List<User>> getUsersStream() {
     return _firestore.collection('users')

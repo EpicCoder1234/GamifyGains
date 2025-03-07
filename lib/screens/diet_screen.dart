@@ -1,10 +1,9 @@
+// diet_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../models/diet_plan.dart';
 import '../services/database_helper.dart';
-import '/widgets/llm_integration.dart';
+import '../models/diet_plan.dart';
 
 class DietScreen extends StatefulWidget {
   const DietScreen({Key? key}) : super(key: key);
@@ -15,113 +14,219 @@ class DietScreen extends StatefulWidget {
 
 class _DietScreenState extends State<DietScreen> {
   final dbHelper = DatabaseHelper();
-  List<DietPlan> dietPlans = [];
+  List<DietPlan> diets = [];
   String _selectedDay = DateFormat('EEEE').format(DateTime.now());
 
   @override
   void initState() {
     super.initState();
-    _checkDatabaseVersion();
+    _loadDiets(_selectedDay);
   }
 
-  Future<void> _checkDatabaseVersion() async {
-    final currentVersion = await dbHelper.getCurrentDatabaseVersion();
-    print('Current database version: $currentVersion');
-
-    if (currentVersion < DatabaseHelper.databaseVersion) {
-      print('Database needs upgrade!');
-      await dbHelper.database;
-      print("Database opened to trigger upgrade");
-    } else {
-      print('Database is up to date.');
-    }
-    await _loadDietPlans(_selectedDay);
-  }
-
-
-  Future<void> _loadDietPlans(String day) async {
-    print("Loading diet plans for day: $day");
-    dietPlans = await dbHelper.getDietPlans(day);
-    print("Loaded diet plans: $dietPlans");
+  Future<void> _loadDiets(String day) async {
+    diets = await dbHelper.getDiets(day);
     setState(() {});
   }
 
-  Future<void> _navigateToLLM() async {
-    print("Navigating to LLM screen");
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LLMIntegrationScreen(selectedDay: _selectedDay),
+  Future<void> _addDiet() async {
+    showDialog(
+      context: context,
+      builder: (context) => _DietDialog(
+        onSave: (newDiet) async {
+          await dbHelper.insertDiet(newDiet);
+          await _loadDiets(_selectedDay);
+        },
+        selectedDay: _selectedDay,
       ),
     );
+  }
 
-    print("Back from LLM screen");
+  Future<void> _updateDiet(DietPlan diet) async {
+    showDialog(
+      context: context,
+      builder: (context) => _DietDialog(
+        diet: diet,
+        onSave: (updatedDiet) async {
+          await dbHelper.updateDiet(updatedDiet);
+          await _loadDiets(_selectedDay);
+        },
+        selectedDay: _selectedDay,
+      ),
+    );
+  }
 
-    if (result != null) {
-      print("Received result: $result");
-      print('_selectedDay in navigateToLLM: $_selectedDay');
-      if (dietPlans.isNotEmpty) {
-        print("Updating existing plan");
-        DietPlan updatedPlan = DietPlan(
-            id: dietPlans.first.id, day: _selectedDay, plan: result);
-        await dbHelper.updateDietPlan(updatedPlan);
-      } else {
-        print("Creating new plan");
-        final newDietPlan = DietPlan(id: const Uuid().v4(), day: _selectedDay, plan: result);
-        await dbHelper.insertDietPlan(newDietPlan);
-      }
-      await _loadDietPlans(_selectedDay);
-      print("Diet Plans after load: $dietPlans");
-    } else {
-      print("Result is null (user cancelled)");
-    }
+  Future<void> _deleteDiet(String id) async {
+    await dbHelper.deleteDiet(id);
+    await _loadDiets(_selectedDay);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Diet Plans')),
+      appBar: AppBar(
+        title: const Text('Diets'),
+        actions: [
+          DropdownButton<String>(
+            value: _selectedDay,
+            icon: const Icon(Icons.calendar_today),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedDay = newValue!;
+                _loadDiets(_selectedDay);
+              });
+            },
+            items: <String>[
+              'Monday',
+              'Tuesday',
+              'Wednesday',
+              'Thursday',
+              'Friday',
+              'Saturday',
+              'Sunday'
+            ].map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToLLM,
+        onPressed: _addDiet,
         child: const Icon(Icons.add),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (dietPlans.isNotEmpty)
-                ...dietPlans.map((plan) => Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Diet Plan for ${_selectedDay}"),
-                            TextFormField(
-                              initialValue: plan.plan,
-                              maxLines: null,
-                              onChanged: (value) async {
-                                DietPlan updatedPlan = DietPlan(
-                                  id: plan.id,
-                                  day: plan.day,
-                                  plan: value,
-                                );
-                                print("Updating existing plan");
-                                await dbHelper.updateDietPlan(updatedPlan);
-                                await _loadDietPlans(_selectedDay);
-                              },
-                            ),
-                          ],
-                        ),
+      body: diets.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : diets.isEmpty
+              ? const Center(child: Text('No diets added yet.'))
+              : ListView.builder(
+                  itemCount: diets.length,
+                  itemBuilder: (context, index) {
+                    final diet = diets[index];
+                    return ListTile(
+                      title: Text(diet.plan),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () => _updateDiet(diet),
+                            icon: const Icon(Icons.edit),
+                          ),
+                          IconButton(
+                            onPressed: () => _deleteDiet(diet.id),
+                            icon: const Icon(Icons.delete),
+                          ),
+                        ],
                       ),
-                    )),
-              if (dietPlans.isEmpty) const Text("No diet plans yet."),
-            ],
-          ),
+                    );
+                  },
+                ),
+    );
+  }
+}
+
+class _DietDialog extends StatefulWidget {
+  final DietPlan? diet;
+  final Function(DietPlan) onSave;
+  final String selectedDay;
+
+  const _DietDialog({
+    Key? key,
+    this.diet,
+    required this.onSave,
+    required this.selectedDay,
+  }) : super(key: key);
+
+  @override
+  State<_DietDialog> createState() => _DietDialogState();
+}
+
+class _DietDialogState extends State<_DietDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _planController;
+  late String _selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    _planController = TextEditingController(text: widget.diet?.plan ?? '');
+    _selectedDay = widget.selectedDay;
+  }
+
+  @override
+  void dispose() {
+    _planController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.diet == null ? 'Add Diet' : 'Edit Diet'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _planController,
+              decoration: const InputDecoration(labelText: 'Plan'),
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a diet plan';
+                }
+                return null;
+              },
+            ),
+            DropdownButtonFormField<String>(
+              value: _selectedDay,
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedDay = newValue!;
+                });
+              },
+              items: <String>[
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday'
+              ].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              decoration: const InputDecoration(labelText: 'Day'),
+            ),
+          ],
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              final diet = DietPlan(
+                id: widget.diet?.id ?? const Uuid().v4(),
+                plan: _planController.text,
+                day: _selectedDay,
+              );
+              widget.onSave(diet);
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }
