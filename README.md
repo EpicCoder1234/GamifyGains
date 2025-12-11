@@ -1,10 +1,10 @@
 # Gamify Gains
 
-🌟 Project Overview
+🌟 # Project Overview
 
 Gamify Gains is a transformative productivity application designed to help users conquer personal goals in fitness by applying the addictive mechanics of video games. Instead of tedious tracking, users earn experience points (XP), level up, unlock achievements, and compete on leaderboards, turning daily exercises into compelling quests. We believe that motivation shouldn't be a chore—it should be a game.
 
-✨ Key Features
+✨ # Key Features
 
 XP & Leveling System: Complete habits and tasks to earn XP and progress through levels, unlocking new features and customizations.
 
@@ -22,7 +22,7 @@ PERSONAL AI TRAINER: Takes all the info you've entered as context and is able to
 
 Social Integration (Leaderboards): Compete with friends or community members on weekly leaderboards to boost friendly rivalry and accountability.
 
-🛠 Technology Stack
+🛠 # Technology Stack
 
 Frontend: [React / Vue / Angular / etc.]
 
@@ -32,7 +32,7 @@ Backend: [Node.js / Python Flask / etc.]
 
 Database: [Firestore / MongoDB / PostgreSQL]
 
-🚀 Getting Started
+🚀 # Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
@@ -76,15 +76,15 @@ yarn start
 
 The application will typically open in your browser at http://localhost:3000.
 
-🤝 Contributing
+🤝 # Contributing
 
-We welcome contributions! If you have suggestions for new features, bug reports, or want to contribute code, please check out our [CONTRIBUTING.md] file and open a Pull Request.
+I welcome contributions! If you have suggestions for new features, bug reports, or want to contribute code, please check out my [CONTRIBUTING.md] file and open a Pull Request.
 
-📄 License
+📄 # License
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE.md] file for details.
 
-📞 Contact
+📞 # Contact
 
 Sai Hruday Reddy Nara - hrudayiitb@gmail.com
 
