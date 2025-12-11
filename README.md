@@ -1,4 +1,4 @@
-**# Gamify Gains: Turn Goals into Games **🚀
+# Gamify Gains: Turn Goals into Games
 
 🌟 Project Overview
 
