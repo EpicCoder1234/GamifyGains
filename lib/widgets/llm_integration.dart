@@ -23,8 +23,8 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
   void initState() {
     super.initState();
     _model = GenerativeModel(
-      model: 'gemini-pro',
-      apiKey: 'AIzaSyB-pQZKw4iWs7xAgGnf-tXHIULtFWnmWng',
+      model: 'gemini-2.0-flash',
+      apiKey: 'AIzaSyD8FiefzYj6uoOYjVoPqClVxZXegof564Y',
     );
     _chat = _model.startChat();
   }

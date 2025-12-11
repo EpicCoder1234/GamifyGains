@@ -1,92 +1,95 @@
 import 'dart:async';
-import 'dart:ui';
-import 'package:flutter/material.dart'; // Import for Timer
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_background_service_android/flutter_background_service_android.dart';
+import 'database_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/database_helper.dart';
-import '../models/user.dart'; // Assuming you have a User model
 
-@pragma('vm:entry-point')
-Future<bool> onStart(ServiceInstance service) async {
-  DartPluginRegistrant.ensureInitialized();
-  final dbHelper = DatabaseHelper();
-  final user = FirebaseAuth.instance.currentUser;
+// Top-level onStart function
+void onStart(ServiceInstance service) async {
+  if (service is AndroidServiceInstance) {
+    service.on('setAsForeground').listen((event) {
+      service.setAsForegroundService();
+    });
 
-  if (user == null) {
-    print("No user logged in");
-    return false;
+    service.on('setAsBackground').listen((event) {
+      service.setAsBackgroundService();
+    });
   }
 
-  // Timer logic (using Timer from 'package:flutter/material.dart')
-  Timer? timer;
-  DateTime? startTime;
-
   service.on('startTimer').listen((event) {
-    startTime ??= DateTime.now();
-    print("Timer started at: $startTime"); // And this
-
-    if (timer == null || !timer!.isActive) {
-      print("Timer initialized");
-      timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-        if (startTime != null) {
-          DateTime now = DateTime.now();
-          final duration = now.difference(startTime!);
-          String formattedTime = DateFormat('HH:mm:ss').format(DateTime(0).add(duration));
-
-          if (service is AndroidServiceInstance && await service.isForegroundService()) {
-            service.setForegroundNotificationInfo(
-              title: "Workout in Progress",
-              content: "Elapsed Time: $formattedTime",
-            );
-          }
-          service.invoke("update", {"current_time": formattedTime});
-        }
-      });
-    }
+    WorkoutService().startTimer();
   });
 
-  service.on('stopService').listen((event) async {
-    if (timer != null && timer!.isActive) {
-      timer!.cancel();
-    }
+  service.on('stopService').listen((event) {
+    WorkoutService().stopTimer();
+    service.stopSelf();
+  });
+}
 
-    final endTime = DateTime.now();
-    if (startTime != null) {
-      final duration = endTime.difference(startTime!);
-      final timerSeconds = duration.inSeconds;
-      print("Workout Duration: $timerSeconds seconds");
+class WorkoutService {
+  static final WorkoutService _instance = WorkoutService._internal();
+  factory WorkoutService() => _instance;
+  WorkoutService._internal();
 
-      // Update Firebase
-      final currentUser = await dbHelper.getUser(user.uid);
-      if (currentUser != null) {
-        currentUser.weeklyGymTime += timerSeconds;
-        print("Updating Firebase with weeklyGymTime: ${currentUser.weeklyGymTime}");
-        await dbHelper.updateUser(currentUser);
-        print("Updated user's weekly gym time in Firebase");
-      } else {
-        print("Could not retrieve user from Firebase");
+  final service = FlutterBackgroundService();
+  Timer? _timer;
+  int _elapsedSeconds = 0;
+  bool _isRunning = false;
+
+  Future<void> initializeService() async {
+    await service.configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: onStart, // Use the top-level function
+        autoStart: false,
+        isForegroundMode: true,
+        notificationChannelId: 'gamify_gains_timer',
+        foregroundServiceNotificationId: 1,
+        initialNotificationTitle: 'Workout Timer',
+        initialNotificationContent: 'Timer is running in the background',
+      ),
+      iosConfiguration: IosConfiguration(
+        autoStart: false,
+        onForeground: onStart, // Use the top-level function
+        onBackground: null,
+      ),
+    );
+  }
+
+  void startTimer() {
+    if (_isRunning) return;
+
+    _isRunning = true;
+    _elapsedSeconds = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _elapsedSeconds++;
+      final timeStr = _formatTime(_elapsedSeconds);
+      service.invoke('update', {'current_time': timeStr});
+    });
+  }
+
+  void stopTimer() async {
+    _timer?.cancel();
+    _isRunning = false;
+
+    // Save the elapsed time to the database
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final dbHelper = DatabaseHelper();
+      final currentUserData = await dbHelper.getUser(user.uid);
+      if (currentUserData != null) {
+        currentUserData.weeklyGymTime += _elapsedSeconds;
+        await dbHelper.updateUser(currentUserData);
       }
     }
 
-    service.stopSelf();
-  });
+    // Reset elapsed time
+    _elapsedSeconds = 0;
+  }
 
-  return true;
-}
-
-Future<void> initializeService() async {
-  final service = FlutterBackgroundService();
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      autoStart: false, // Set to false for manual start
-      isForegroundMode: true,
-    ),
-    iosConfiguration: IosConfiguration(
-      autoStart: false, // Set to false for manual start
-      onForeground: onStart,
-      onBackground: null,
-    ),
-  );
+  String _formatTime(int seconds) {
+    final hours = (seconds ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$secs';
+  }
 }

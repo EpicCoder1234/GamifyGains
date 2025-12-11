@@ -29,6 +29,49 @@
             {
               "client_id": "903083396983-cbnibmapb4ncv8k7jd1fp85r7u97b8th.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "903083396983-sstflvuuk1hktnc0fq9aj2mdv8strfsa.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gamifyGains"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:903083396983:android:07596f789442fe890c9b72",
+        "android_client_info": {
+          "package_name": "org.codecraftacademy.gamify_gains"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "903083396983-cbnibmapb4ncv8k7jd1fp85r7u97b8th.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3hHozitLIHawqA_4LhXFqMd45bGXhuzQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "903083396983-cbnibmapb4ncv8k7jd1fp85r7u97b8th.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "903083396983-sstflvuuk1hktnc0fq9aj2mdv8strfsa.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gamifyGains"
+              }
             }
           ]
         }
