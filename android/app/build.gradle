@@ -1,49 +1,82 @@
+
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
+    
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
     id "com.google.gms.google-services"
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
+// FIX: Changed 'val' to Groovy syntax (no keyword needed for local variables here)
+// Original: val keystoreProperties = Properties()
+def keystoreProperties = new Properties() // Using 'new Properties()' for clarity and consistency
+
+// Original: val keystorePropertiesFile = rootProject.file("key.properties")
+def keystorePropertiesFile = rootProject.file("key.properties")
+
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+
 
 android {
-    namespace = "com.example.gamify_gains"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    namespace "com.example.gamify_gains"
+    compileSdk flutter.compileSdkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = '1.8'
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.gamify_gains"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // TODO: Specify your own unique Application ID (https://developer.android.com/tools/build/configure-build#applicationid)
+        applicationId "org.codecraftacademy.gamify_gains"
+        minSdkVersion 23
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode 2
+        versionName flutter.versionName
+        multiDexEnabled true // Add this line if not already present
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties.getProperty('storeFile'))
+            storePassword keystoreProperties.getProperty('storePassword')
+            keyAlias keystoreProperties.getProperty('keyAlias')
+            keyPassword keystoreProperties.getProperty('keyPassword')
+        }
     }
 
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // For more information, build with '--debug' to see signatures for debugging.
+            // For more information, visit https://flutter.dev/docs/deployment/android#signing-the-app
+            signingConfig signingConfigs.release
+            minifyEnabled false // Change this from true to false
+            shrinkResources false // You'll likely want to disable this too if you disable R8
+            //proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 flutter {
-    source = "../.."
+    source '../..'
 }
+
 dependencies {
 
     implementation platform('com.google.firebase:firebase-bom:32.3.1')
