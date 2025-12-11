@@ -1,4 +1,4 @@
-#Gamify Gains: Turn Goals into Games 🚀
+**# Gamify Gains: Turn Goals into Games **🚀
 
 🌟 Project Overview
 
@@ -66,7 +66,7 @@ REACT_APP_API_BASE_URL=http://localhost:3001/api
 Run the application:
 
 npm start
-# or
+or
 yarn start
 
 
@@ -82,6 +82,6 @@ This project is licensed under the [Specify License, e.g., MIT License] - see th
 
 📞 Contact
 
-[Your Name / Team Name] - [Your Contact Email]
+Sai Hruday Reddy Nara - hrudayiitb@gmail.com
 
 Project Link: [https://github.com/[YourUsername]/gamify-gains]
