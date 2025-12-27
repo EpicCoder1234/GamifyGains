@@ -23,7 +23,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
   final AuthService _authService = AuthService();
 
   GymSession? _currentSession;
-  bool _isWorkoutActive = false; // Tracks if a session is actively running
+  bool _isWorkoutActive = false; 
 
   @override
   void initState() {
@@ -66,7 +66,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
     }
 
     try {
-      // Check for completion *before* attempting to start
+      // Check for completion before attempting to start new session
       bool hasCompleted = await DatabaseHelper().hasCompletedGymSessionToday(_currentUserUid!);
       if (hasCompleted) {
         if (mounted) {
@@ -144,9 +144,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
         _isWorkoutActive = false;
         _currentSession = null;
       });
-      // Do not pop here if user wants to see the screen and perhaps start another.
-      // Or pop if this screen's purpose is only for an active session.
-      // For now, let's pop to return to the home screen after stopping.
+
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -195,7 +193,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
         _currentSession = null;
       });
       if (mounted) {
-        Navigator.of(context).pop(); // Always pop to return to home screen after save/error
+        Navigator.of(context).pop(); // return to home screen after save/error
       }
     }
   }
@@ -318,7 +316,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Display the timer and stop/reset buttons IF a workout is active
+                // Display the timer and stop/reset button if workout is active
                 if (_isWorkoutActive)
                   Column(
                     children: [
@@ -379,7 +377,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          // This button now always offers to discard/reset
+ 
                           final bool? confirm = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
@@ -432,8 +430,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
                     ],
                   )
                 else
-                  // If no workout is active, show the start button.
-                  // This part now uses the StreamBuilder directly.
+
                   StreamBuilder<bool>(
                     stream: DatabaseHelper().hasCompletedGymSessionTodayStream(_currentUserUid!),
                     initialData: false,
@@ -450,7 +447,7 @@ class _GymSessionScreenState extends State<GymSessionScreen> {
                           ),
                           const SizedBox(height: 30),
                           ElevatedButton.icon(
-                            onPressed: hasCompletedSessionToday ? null : _startWorkout, // Disable if completed
+                            onPressed: hasCompletedSessionToday ? null : _startWorkout, // disable if completed
                             icon: Icon(Icons.play_arrow, color: hasCompletedSessionToday ? Colors.grey : Colors.white, size: 28),
                             label: Text(
                               hasCompletedSessionToday ? 'Workout Completed Today' : 'Start Workout',

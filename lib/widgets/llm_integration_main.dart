@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User; // For current user UID
-import '../services/database_helper.dart'; // To fetch user data, workouts, diet
-import '../models/user.dart'; // User model
-import '../models/workout.dart'; // Workout model
-import '../models/diet_plan.dart'; // DietPlan model
+import '../services/database_helper.dart'; 
+import '../services/gemini_api.dart';
+import '../models/user.dart'; 
+import '../models/workout.dart'; 
+import '../models/diet_plan.dart'; 
 import 'package:intl/intl.dart'; // For formatting current day
 
 class LLMIntegrationScreen extends StatefulWidget {
-  final String selectedDay; // This might represent the current day from HomeScreen
+  final String selectedDay; 
   const LLMIntegrationScreen({Key? key, required this.selectedDay})
       : super(key: key);
 
@@ -19,43 +20,59 @@ class LLMIntegrationScreen extends StatefulWidget {
 
 class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
   late final GenerativeModel _model;
-  late ChatSession _chat; // Made non-final as it's initialized async
+  // Make _chat nullable so we can check if it's initialized without LateInitializationError
+  ChatSession? _chat; 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textController = TextEditingController();
   final FocusNode _textFieldFocus = FocusNode(debugLabel: 'TextField');
-  bool _loading = false;
+  bool _loading = true; // Start loading as true
 
   String? _currentUserUid;
   User? _currentUser;
   List<Workout>? _todayWorkouts;
   DietPlan? _todayDietPlan;
-  final DatabaseHelper _dbHelper = DatabaseHelper(); // Instantiate dbHelper
+  final DatabaseHelper _dbHelper = DatabaseHelper(); 
 
   @override
   void initState() {
     super.initState();
+    // Initialize the model here, but the chat session starts later with context
     _model = GenerativeModel(
-      model: 'gemini-2.0-flash',
-      apiKey: 'AIzaSyD8FiefzYj6uoOYjVoPqClVxZXegof564Y', // Keep your API key here
+      model: 'gemini-2.5-flash', // Using 1.5-flash which supports system instructions well
+      apiKey: geminiAPIkey, 
     );
-    // Initialize chat asynchronously after fetching user data
+
     _loadUserDataAndInitializeChat();
   }
 
-  // New method to fetch user data and initialize the chat session
   Future<void> _loadUserDataAndInitializeChat() async {
-    setState(() {
-      _loading = true; // Show loading indicator while fetching user data
-    });
-
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _currentUserUid = user.uid;
-      _currentUser = await _dbHelper.getUser(_currentUserUid!);
+      
+      try {
+        _currentUser = await _dbHelper.getUser(_currentUserUid!);
+      } catch (e) {
+        print("Error fetching user profile: $e");
+      }
 
-      // Corrected: Using .first to get a single snapshot from the streams
-      _todayWorkouts = (await _dbHelper.getWorkoutsStream(_currentUserUid!, DateFormat('EEEE').format(DateTime.now())).first);
-      _todayDietPlan = (await _dbHelper.getDietPlanStream(_currentUserUid!, DateFormat('EEEE').format(DateTime.now())).first);
+      try {
+        // Fetch today's workouts
+        // Note: Using 'first' on a stream takes the first emitted value.
+        // Ensure your streams emit at least one value (e.g., empty list) even if no data.
+        _todayWorkouts = await _dbHelper.getWorkoutsStream(_currentUserUid!, DateFormat('EEEE').format(DateTime.now())).first;
+      } catch (e) {
+        print("Error fetching workouts: $e");
+        _todayWorkouts = [];
+      }
+
+      try {
+        // Fetch today's diet plan
+        _todayDietPlan = await _dbHelper.getDietPlanStream(_currentUserUid!, DateFormat('EEEE').format(DateTime.now())).first;
+      } catch (e) {
+        print("Error fetching diet plan: $e");
+        _todayDietPlan = null;
+      }
 
       String initialContext = "You are an AI gym assistant named 'Gamify Gains AI'. Your purpose is to provide personalized fitness and health advice. Always keep the user's provided context in mind. Here is the user's current context:\n";
 
@@ -100,44 +117,57 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
       }
       initialContext += "\n";
 
-      _chat = _model.startChat(
-        history: [
-          // Send the initial context as a model message so it guides the AI's responses
-          // without being part of the user's direct conversation history.
-          Content.model([TextPart(initialContext)]),
-        ],
+      // Let's re-initialize model with system instruction for cleaner separation
+      final modelWithSystemInstruction = GenerativeModel(
+          model: 'gemini-2.5-flash',
+          apiKey: geminiAPIkey,
+          systemInstruction: Content.system(initialContext),
       );
+
+      _chat = modelWithSystemInstruction.startChat(
+        history: [], // History starts empty, context is in system instruction
+      );
+      
       print('AI Chat initialized with user context.');
     } else {
-      _showError('User not logged in. Please log in to use the AI assistant.');
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/auth');
+        _showError('User not logged in. Please log in to use the AI assistant.');
+        // Don't pop immediately, show the error first
+        Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) Navigator.of(context).pushReplacementNamed('/auth');
+        });
       }
     }
-    setState(() {
-      _loading = false;
-    });
+    
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
 
   void _scrollDown() {
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 750),
-        curve: Curves.easeOutCirc,
-      ),
+      (_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 750),
+            curve: Curves.easeOutCirc,
+          );
+        }
+      },
     );
   }
 
   Future<void> _sendChatMessage(String message) async {
     if (message.trim().isEmpty) {
-      _showError('Please enter a message.');
       return;
     }
 
-    if (_currentUserUid == null || _currentUser == null) {
-      _showError('User data not loaded. Please ensure you are logged in and your profile exists.');
+    if (_currentUserUid == null) {
+      _showError('User data not loaded. Please ensure you are logged in.');
       return;
     }
 
@@ -146,8 +176,8 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
     });
 
     try {
-      // Send only the user's message; the context is already in the chat history.
-      final response = await _chat.sendMessage(Content.text(message));
+      // Use _chat! since we know it's initialized if _loading is false and we are sending
+      final response = await _chat!.sendMessage(Content.text(message));
       final text = response.text;
 
       if (text == null) {
@@ -160,7 +190,7 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
       setState(() {
         _loading = false;
       });
-      _scrollDown(); // Ensure scrolling happens after any message (user or model) or error
+      _scrollDown(); 
       _textFieldFocus.requestFocus();
     }
   }
@@ -189,35 +219,56 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final history = _chat.history.toList();
+    // Correctly check if loading OR chat is not yet initialized
+    if (_loading || _chat == null) { 
+        return Scaffold(
+            appBar: AppBar(
+                title: const Text('AI Gym Assistant', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                backgroundColor: Colors.black,
+                iconTheme: const IconThemeData(color: Colors.white),
+            ),
+            backgroundColor: Colors.black,
+            body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        );
+    }
+
+    // Now safe to access history because we returned early if _chat was null
+    final history = _chat!.history.toList();
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Gym Assistant', style: TextStyle(
+      appBar: AppBar(
+        title: const Text(
+          'AI Gym Assistant', 
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
-          ),), backgroundColor: Colors.black,iconTheme: const IconThemeData(color: Colors.white), foregroundColor: Colors.white),
-      backgroundColor: Colors.black,
+          ),
+        ), 
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white), 
+        foregroundColor: Colors.white
+      ),
+      backgroundColor: Colors.black, // Ensure entire background is black
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Expanded(
-              child: _loading && history.isEmpty // Show loading indicator only if initial load and no history yet
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      controller: _scrollController,
-                      itemBuilder: (context, idx) {
-                        final content = history[idx];
-                        final text = content.parts
-                            .whereType<TextPart>()
-                            .map<String>((e) => e.text)
-                            .join('');
-                        return MessageWidget(
-                          text: text,
-                          isFromUser: content.role == 'user',
-                        );
-                      },
-                      itemCount: history.length,
-                    ),
+              child: ListView.builder(
+                controller: _scrollController,
+                itemBuilder: (context, idx) {
+                  final content = history[idx];
+                  final text = content.parts
+                      .whereType<TextPart>()
+                      .map<String>((e) => e.text)
+                      .join('');
+                  return MessageWidget(
+                    text: text,
+                    isFromUser: content.role == 'user',
+                  );
+                },
+                itemCount: history.length,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
@@ -225,21 +276,19 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
                 children: [
                   Expanded(
                     child: TextField(
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                       autofocus: true,
                       focusNode: _textFieldFocus,
-                      decoration:
-                          textFieldDecoration(context, 'Ask anything...'),
-
+                      decoration: textFieldDecoration(context, 'Ask anything...'),
                       controller: _textController,
                       onSubmitted: (String value) {
                         _sendChatMessage(value);
                       },
-                      enabled: !_loading, // Disable input while loading
+                      enabled: !_loading, 
                     ),
                   ),
                   const SizedBox.square(dimension: 15),
-                  if (!_loading) // Only show send button when not loading
+                  if (!_loading) 
                     IconButton(
                       onPressed: () async {
                         _sendChatMessage(_textController.text);
@@ -250,14 +299,14 @@ class _LLMIntegrationScreenState extends State<LLMIntegrationScreen> {
                       ),
                     )
                   else
-                    const CircularProgressIndicator(), // Show loading indicator instead of send button
+                    const SizedBox(
+                        width: 24, 
+                        height: 24, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                    ), 
                 ],
               ),
             ),
-            // Removed the ElevatedButton 'Save Diet Plan' from here as it seems out of place
-            // for a general LLM assistant. If it's specifically for Diet Plan suggestions,
-            // it should be in the DietScreen or conditionally rendered based on context.
-            // For now, removing to simplify and align with general AI chat.
           ],
         ),
       ),
@@ -297,6 +346,13 @@ class MessageWidget extends StatelessWidget {
               data: text,
               styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                 p: TextStyle(color: textColor),
+                h1: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                h2: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                h3: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                strong: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                em: TextStyle(color: textColor, fontStyle: FontStyle.italic),
+                listBullet: TextStyle(color: textColor),
+                blockSpacing: 10.0,
               ),
             ),
           ),
@@ -305,7 +361,6 @@ class MessageWidget extends StatelessWidget {
     );
   }
 }
-
 
 InputDecoration textFieldDecoration(BuildContext context, String hintText) =>
     InputDecoration(
@@ -318,8 +373,12 @@ InputDecoration textFieldDecoration(BuildContext context, String hintText) =>
         borderRadius: const BorderRadius.all(Radius.circular(14)),
         borderSide: const BorderSide(color: Colors.white),
       ),
+      enabledBorder: OutlineInputBorder( // Explicitly set enabled border color
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+        borderSide: const BorderSide(color: Colors.white54),
+      ),
       focusedBorder: OutlineInputBorder(
         borderRadius: const BorderRadius.all(Radius.circular(14)),
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.secondary),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
       ),
     );

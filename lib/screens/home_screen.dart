@@ -348,33 +348,30 @@ class _HomeScreenState extends State<HomeScreen>
                   _buildDietPlan(),
                   const SizedBox(height: 20),
                   _buildLeaderboard()
-                  // The Positioned timer bottom sheet should now be placed directly in the Stack
-                  // if you want it to overlay everything, otherwise, it can be here if it's part of the scrollable content.
-                  // For a consistent overlay, it's typically in the main Stack of the Scaffold.
+
                 ],
               ),
             ),
           ),
         ),
-        // The Positioned timer bottom sheet remains directly in the Scaffold's body Stack
-        // to ensure it overlays all content correctly.
+     
         bottomSheet: isWorkoutRunning ? _buildTimerBottomSheet() : null, // Use bottomSheet for cleaner overlay
       ),
     );
   }
   Widget _buildWelcomeMessage(String userName) {
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0), // Add some vertical and horizontal padding
+    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0), 
     child: Center( // Center the text horizontally
       child: Text(
-        'Welcome, $userName! Ready for a good workout?', // Your personalized message
-        textAlign: TextAlign.center, // Ensure the text is centered within its bounds
+        'Welcome, $userName! Ready for a good workout?',
+        textAlign: TextAlign.center, 
         style: TextStyle(
-          fontSize: 22, // Make the font size prominent
-          fontWeight: FontWeight.bold, // Bold for emphasis
-          color: Colors.white, // A vibrant color for a welcoming feel
-          letterSpacing: 1.2, // Slightly increased letter spacing for readability
-          shadows: [ // Add a subtle shadow for depth
+          fontSize: 22, 
+          fontWeight: FontWeight.bold, 
+          color: Colors.white, 
+          letterSpacing: 1.2, 
+          shadows: [ 
             Shadow(
               blurRadius: 3.0,
               color: Colors.orange.withOpacity(0.5),
@@ -395,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen>
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
-        boxShadow: [ // Added a subtle shadow for better visual separation
+        boxShadow: [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 10,
@@ -415,10 +412,10 @@ class _HomeScreenState extends State<HomeScreen>
                   "Workout Time: $time",
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                ElevatedButton.icon( // Changed to ElevatedButton.icon for aesthetic
+                ElevatedButton.icon( 
                   onPressed: () {
-                    service.invoke("stopService"); // Stop background service
-                    _stopWorkout(); // Stop UI timer and update gym time
+                    service.invoke("stopService"); // stop backgreound service
+                    _stopWorkout(); 
                   },
                   icon: const Icon(Icons.stop, color: Colors.white),
                   label: const Text("Stop", style: TextStyle(color: Colors.white)),
@@ -437,20 +434,20 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // Removed _buildHeader as its elements are now in the AppBar and Drawer
+  // Removed _buildHeader elements are now in AppBar and Drawer
 
   Widget _buildWorkoutSummary(String currentDay) {
   return Container(
     padding: const EdgeInsets.all(16.0),
     decoration: BoxDecoration(
-      // Darker, more opaque background with a subtle gradient effect
-      color: Colors.blueGrey[900]?.withOpacity(0.9), // Darker, less transparent
-      borderRadius: BorderRadius.circular(15.0), // More rounded corners
+     
+      color: Colors.blueGrey[900]?.withOpacity(0.9), 
+      borderRadius: BorderRadius.circular(15.0), 
       border: Border.all(
-          color: const Color.fromARGB(255, 216, 130, 0), // <--- ORANGE BORDER
+          color: const Color.fromARGB(255, 216, 130, 0), 
           width: 2,
         ),
-      boxShadow: [ // Add a subtle shadow for depth
+      boxShadow: [ 
         BoxShadow(
           color: Colors.black.withOpacity(0.4),
           spreadRadius: 2,
@@ -466,11 +463,11 @@ class _HomeScreenState extends State<HomeScreen>
           child: Text(
             currentDay,
             style: const TextStyle(
-              fontSize: 24, // Slightly bigger day text
+              fontSize: 24, 
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              letterSpacing: 1.2, // A bit more spacing for emphasis
-              shadows: [ // Subtle text shadow
+              letterSpacing: 1.2, 
+              shadows: [ 
                 Shadow(
                   blurRadius: 2.0,
                   color: Colors.black,
@@ -480,20 +477,23 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ),
-        const SizedBox(height: 15), // Increased spacing
-        _currentUserUid == null // Check if user UID is loaded
+        const SizedBox(height: 15), 
+        _currentUserUid == null // user UID loaded?
             ? const Center(
+
                 child: Text(
                   'Please log in to see your workouts.',
-                  style: TextStyle(color: Colors.white70, fontSize: 16), // Slightly muted for info
+
+                  style: TextStyle(color: Colors.white70, fontSize: 16), 
+
                   textAlign: TextAlign.center,
                 ),
               )
             : StreamBuilder<List<Workout>>(
-                stream: _currentWorkoutsStream, // Listen to the new workout stream
+                stream: _currentWorkoutsStream, 
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.deepPurpleAccent)); // Use accent color
+                    return const Center(child: CircularProgressIndicator(color: Colors.deepPurpleAccent)); 
                   }
                   if (snapshot.hasError) {
                     print('HomeScreen WorkoutStream Error: ${snapshot.error}');
@@ -526,13 +526,13 @@ class _HomeScreenState extends State<HomeScreen>
                               ).then((value) => _loadCurrentUserAndSetupStreams());
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color.fromARGB(255, 216, 130, 0), // A solid, attractive button color
+                              backgroundColor: Color.fromARGB(255, 216, 130, 0), 
                               foregroundColor: Colors.black,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25.0), // Even more rounded
+                                borderRadius: BorderRadius.circular(25.0), 
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                              elevation: 5, // Add elevation for a "lifted" effect
+                              elevation: 5, 
                             ),
                             child: const Text('Add Workout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
@@ -546,26 +546,26 @@ class _HomeScreenState extends State<HomeScreen>
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: workouts.map((workout) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0), // Increased vertical padding
+                      padding: const EdgeInsets.symmetric(vertical: 6.0), 
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 18), // Add a subtle icon
-                          const SizedBox(width: 8), // Spacing between icon and text
+                          const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 18), 
+                          const SizedBox(width: 8), 
                           Expanded(
                             child: RichText(
                               text: TextSpan(
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 17), // Slightly bigger workout text
+                                    color: Colors.white, fontSize: 17), 
                                 children: <TextSpan>[
                                   TextSpan(
                                       text: '${workout.sets}',
-                                      style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)), // Changed red to orangeAccent for sets/reps
+                                      style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)), 
                                   const TextSpan(text: ' sets of '),
                                   TextSpan(
                                       text: '${workout.reps}',
                                       style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
                                   const TextSpan(text: ' rep '),
-                                  TextSpan(text: workout.name, style: const TextStyle(fontWeight: FontWeight.w600)), // Make workout name a bit bolder
+                                  TextSpan(text: workout.name, style: const TextStyle(fontWeight: FontWeight.w600)), 
                                 ],
                               ),
                             ),
@@ -576,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen>
                   );
                 },
               ),
-        const SizedBox(height: 20), // Increased spacing
+        const SizedBox(height: 20), 
         Center(
           child: ElevatedButton(
             onPressed: () {
@@ -584,11 +584,10 @@ class _HomeScreenState extends State<HomeScreen>
                 context,
                 MaterialPageRoute(
                     builder: (context) => const WorkoutListScreen()),
-              ).then((value) => _loadCurrentUserAndSetupStreams()); // Reload data after returning from workout list
+              ).then((value) => _loadCurrentUserAndSetupStreams()); 
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(255, 216, 130, 0), // <--- ORANGE BORDER
-     // Use a vibrant accent color
+              backgroundColor: Color.fromARGB(255, 216, 130, 0),
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25.0),
@@ -597,7 +596,7 @@ class _HomeScreenState extends State<HomeScreen>
               elevation: 5,
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            child: const Text('Go to Workout Plan'), // Changed text for clarity
+            child: const Text('Go to Workout Plan'), 
           ),
         ),
       ],
@@ -608,27 +607,26 @@ class _HomeScreenState extends State<HomeScreen>
 // Part of lib/screens/home_screen.dart (within _HomeScreenState)
 
 Widget _buildWorkoutSection() {
-  // Ensure _currentUser and _dbHelper are accessible in _HomeScreenState
-  final DatabaseHelper _dbHelper = DatabaseHelper(); // Assuming this is how you access it
-  final String? currentUserUid = _currentUserUid; // Assuming _auth is FirebaseAuth.instance
+
+  final DatabaseHelper _dbHelper = DatabaseHelper(); 
+  final String? currentUserUid = _currentUserUid; 
 
   if (currentUserUid == null) {
-    // Handle the case where the user is not logged in, or UID is not available.
-    // This widget might not even be built if _currentUser is null at the top level.
-    return const SizedBox.shrink(); // Return an empty widget or a placeholder
+ 
+    return const SizedBox.shrink();
   }
 
   return StreamBuilder<bool>(
     stream: _dbHelper.hasCompletedGymSessionTodayStream(currentUserUid),
-    initialData: false, // Assume not completed initially
+    initialData: false, 
     builder: (context, snapshot) {
       final bool hasCompletedSessionToday = snapshot.data ?? false;
-      print('DEBUG: _buildWorkoutSection - Has completed session today: $hasCompletedSessionToday'); // For debugging
+      print('DEBUG: _buildWorkoutSection - Has completed session today: $hasCompletedSessionToday'); 
 
       return Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: Colors.blueGrey[900]?.withOpacity(0.9), // Consistent dark background
+          color: Colors.blueGrey[900]?.withOpacity(0.9), 
           borderRadius: BorderRadius.circular(15.0),
           boxShadow: [
             BoxShadow(
@@ -655,23 +653,23 @@ Widget _buildWorkoutSection() {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const GymSessionScreen(), // Navigate to your timer screen
+                      builder: (context) => const GymSessionScreen(),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: hasCompletedSessionToday ? Colors.black54 : Colors.greenAccent, // Blurred/blacked out when disabled
-                  foregroundColor: hasCompletedSessionToday ? Colors.grey : Colors.black, // Greyed out text when disabled
+                  backgroundColor: hasCompletedSessionToday ? Colors.black54 : Colors.greenAccent, 
+                  foregroundColor: hasCompletedSessionToday ? Colors.grey : Colors.black, 
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25.0),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  elevation: hasCompletedSessionToday ? 0 : 7, // Less elevation when disabled
+                  elevation: hasCompletedSessionToday ? 0 : 7, 
                   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                icon: Icon(Icons.timer, color: hasCompletedSessionToday ? Colors.grey : Colors.white), // Greyed out icon when disabled
+                icon: Icon(Icons.timer, color: hasCompletedSessionToday ? Colors.grey : Colors.white),
                 label: Text(
-                  hasCompletedSessionToday ? 'Completed' : 'Start Workout', // Change button label
+                  hasCompletedSessionToday ? 'Completed' : 'Start Workout', 
                 ),
               ),
             ),
@@ -683,10 +681,10 @@ Widget _buildWorkoutSection() {
 }
  
 Widget _buildAI() {
-  return Container( // Wrap in a container for consistent padding and background
+  return Container( 
     padding: const EdgeInsets.all(16.0),
     decoration: BoxDecoration(
-      color: Colors.blueGrey[900]?.withOpacity(0.9), // Consistent dark background
+      color: Colors.blueGrey[900]?.withOpacity(0.9), 
       borderRadius: BorderRadius.circular(15.0),
       boxShadow: [
         BoxShadow(
@@ -701,22 +699,22 @@ Widget _buildAI() {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Image.asset(
-          'assets/gemini.png', // Ensure this path is correct and asset is added to pubspec.yaml
-          height: 60, // Slightly larger logo
+          'assets/gemini.png', 
+          height: 60, 
         ),
-        const SizedBox(width: 15), // Increased spacing
+        const SizedBox(width: 15), 
         Expanded(
-          child: ElevatedButton.icon( // Changed to ElevatedButton.icon for an icon
+          child: ElevatedButton.icon( 
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LLMIntegrationScreen(selectedDay: "Tuesday"), // Navigate to your AI screen
+                  builder: (context) => const LLMIntegrationScreen(selectedDay: "Tuesday"), 
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(255, 216, 130, 0), // A distinctive blue for AI interaction
+              backgroundColor: Color.fromARGB(255, 216, 130, 0), 
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25.0),
@@ -725,7 +723,7 @@ Widget _buildAI() {
               elevation: 5,
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            icon: const Icon(Icons.psychology_outlined, color: Colors.white), // AI/Brain icon
+            icon: const Icon(Icons.psychology_outlined, color: Colors.white), 
             label: const Text('Talk with AI'),
           ),
         ),
@@ -736,13 +734,11 @@ Widget _buildAI() {
 
 
 Widget _buildDietPlan() {
-  String currentDay = DateFormat('EEEE').format(DateTime.now()); // Fetch current day here
+  String currentDay = DateFormat('EEEE').format(DateTime.now()); 
 
   return Container(
     padding: const EdgeInsets.all(16.0),
     decoration: BoxDecoration(
-      // Keep it a slightly different color or background to differentiate from workouts,
-      // but still within the dark theme family. Using a slightly lighter grey-blue.
       color: Colors.blueGrey[800]?.withOpacity(0.9),
       borderRadius: BorderRadius.circular(15.0),
       boxShadow: [
@@ -758,7 +754,7 @@ Widget _buildDietPlan() {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Your Diet Plan Today:', // Changed title
+          'Your Diet Plan Today:',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 15),
@@ -771,7 +767,7 @@ Widget _buildDietPlan() {
                 ),
               )
             : StreamBuilder<DietPlan?>(
-                stream: _currentDayDietPlanStream, // Listen to the stream for today's diet
+                stream: _currentDayDietPlanStream, 
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -802,7 +798,7 @@ Widget _buildDietPlan() {
                                   MaterialPageRoute(builder: (context) => DietScreen()));
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color.fromARGB(255, 216, 130, 0), // A warm, inviting color for diet
+                              backgroundColor: Color.fromARGB(255, 216, 130, 0), 
                               foregroundColor: Colors.black,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(25.0),
@@ -885,7 +881,7 @@ Widget _buildDietMealItem(String mealType, String mealDetails) {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.restaurant_menu, color: Colors.white70, size: 18), // Food icon
+        const Icon(Icons.restaurant_menu, color: Colors.white70, size: 18), 
         const SizedBox(width: 8),
         Expanded(
           child: RichText(
@@ -910,7 +906,7 @@ Widget _buildDietMealItem(String mealType, String mealDetails) {
   return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.blueGrey[900]?.withOpacity(0.9), // Consistent dark background
+      color: Colors.blueGrey[900]?.withOpacity(0.9), 
       borderRadius: BorderRadius.circular(15),
       boxShadow: [
         BoxShadow(
